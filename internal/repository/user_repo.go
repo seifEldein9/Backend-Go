@@ -2,17 +2,16 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"go-backend-app/internal/config"
 	"go-backend-app/internal/models"
-
 	"log"
 	"time"
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"golang.org/x/crypto/bcrypt"
-
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var userCollection *mongo.Collection
@@ -51,6 +50,7 @@ func GetUserByEmail(email string) (models.User, error) {
 	return user, err
 }
 
+
 func CheckPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
@@ -58,11 +58,23 @@ func CheckPasswordHash(password, hash string) bool {
 
 
 func CreateUser(user models.User) error {
+ 	existingUser, _ := GetUserByEmail(user.Email)
+	if existingUser.Email != "" {
+			return fmt.Errorf("user with email %s already exists", user.Email)
+	}
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 			return err
 	}
 	user.Password = string(hash)
+
 	_, err = userCollection.InsertOne(context.Background(), user)
-	return err
+	if err != nil {
+			if mongo.IsDuplicateKeyError(err) {
+					return fmt.Errorf("user with email %s already exists", user.Email)
+			}
+			return err
+	}
+	return nil
 }

@@ -14,7 +14,7 @@ func AddUser(user models.User) error {
 func LoginUser(email, password string) (models.User, bool, error) {
 	user, err := repository.GetUserByEmail(email)
 	if err != nil {
-			return models.User{}, false, err
+			return models.User{}, false, err  
 	}
 	isValidPassword := repository.CheckPasswordHash(password, user.Password)
 	return user, isValidPassword, nil

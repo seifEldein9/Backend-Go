@@ -26,12 +26,17 @@ func CreateUser(c *gin.Context) {
 
 	err := services.AddUser(user)
 	if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+			if err.Error() == "user already exists" {  
+					c.JSON(http.StatusConflict, gin.H{"error": "User with this email already exists"})
+			} else {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user: " + err.Error()})
+			}
 			return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "User created successfully"})
 }
+
 func LoginUser(c *gin.Context) {
 	var credentials struct {
 			Email    string `json:"email"`
@@ -45,7 +50,7 @@ func LoginUser(c *gin.Context) {
 
 	user, valid, err := services.LoginUser(credentials.Email, credentials.Password)
 	if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error logging in"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error logging in: " + err.Error()})
 			return
 	}
 
